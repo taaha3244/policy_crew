@@ -6,3 +6,7 @@ qdrant-client
 pdfplumber 
 langchainhub
 python-dotenv
+uvicorn
+fastapi
+streamlit
+pydantic
