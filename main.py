@@ -132,16 +132,16 @@ class CrewManager:
 
 # The owner is willing to explore and apply for various financing options."""
 
-#     # Create CrewManager instance
-#     manager = CrewManager(prompt)
+    # # Create CrewManager instance
+    # manager = CrewManager(prompt)
 
-#     # Get OpenAI response to determine if the query is generic or project-specific
-#     openai_response = manager.get_openai_response()
-#     logger.info(f"OpenAI response: {openai_response}")
+    # # Get OpenAI response to determine if the query is generic or project-specific
+    # openai_response = manager.get_openai_response()
+    # logger.info(f"OpenAI response: {openai_response}")
 
-#     # Start the crew based on the classification
-#     result = manager.start_crew(openai_response.is_generic)
-#     print(result)
+    # # Start the crew based on the classification
+    # result = manager.start_crew(openai_response.is_generic)
+    # print(result)
 
 
 

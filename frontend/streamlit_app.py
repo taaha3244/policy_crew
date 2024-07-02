@@ -2,7 +2,7 @@ import streamlit as st
 import requests
 
 # URL of the FastAPI backend
-FASTAPI_URL = "http://localhost:8000/process_query/"
+FASTAPI_URL = "http://fastapi_container:8000/process_query/"
 
 # Initialize session state if it does not exist
 if 'chat_history' not in st.session_state:

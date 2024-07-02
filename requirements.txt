@@ -10,3 +10,5 @@ uvicorn
 fastapi
 streamlit
 pydantic
+pymongo
+dnspython
