@@ -1,3 +1,5 @@
 .env
 __pycache__
 policy_agent
+.ruff_cache
+logs

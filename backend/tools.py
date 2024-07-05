@@ -9,23 +9,45 @@ from langchain_core.output_parsers import StrOutputParser
 from langchain import hub
 from crewai_tools import BaseTool
 from typing import List
-from custom_logger import get_logger
-from custom_exceptions import CustomException,RetrievalError, DataProcessingError
+from backend.custom_logger import get_logger
+from backend.custom_exceptions import RetrievalError, DataProcessingError
 
-logger = get_logger(__name__)
-
+# Load environment variables
 load_dotenv()
 
+# Initialize the logger
+logger = get_logger(__name__)
 
-# Create a Class for the Agent's part which is responsible for asking questions simply from the RAG
+class RAGTool:
+    """
+    A class to handle the Retrieval-Augmented Generation (RAG) process.
 
-class rag_tool:
-    def __init__(self, query):
+    Attributes:
+        query (str): The query to process using the RAG system.
+    """
+
+    def __init__(self, query: str):
+        """
+        Initialize the RAGTool with the given query.
+
+        Args:
+            query (str): The query to process.
+        """
         self.query = query
 
-    def qa_from_RAG(self):
+    def qa_from_RAG(self) -> str:
+        """
+        Process the query using the RAG system and return the result.
+
+        Returns:
+            str: The result of processing the query.
+
+        Raises:
+            RetrievalError: If there is an error retrieving or processing the query.
+        """
         try:
             logger.info("Initializing RAG tool with query: %s", self.query)
+
             # Setup
             qdrant_url = os.getenv('QDRANT_URL')
             qdrant_api_key = os.getenv('QDRANT_API_KEY')
@@ -42,18 +64,20 @@ class rag_tool:
             llm = ChatOpenAI(model_name="gpt-3.5-turbo", temperature=0.2, openai_api_key=openai_api_key)
 
             def format_docs(docs):
+                """
+                Format the documents by combining page content with its metadata.
+
+                Args:
+                    docs (list): List of documents to format.
+
+                Returns:
+                    str: Formatted documents as a string.
+                """
                 formatted_docs = []
                 for doc in docs:
-                    # Format the metadata into a string
                     metadata_str = ', '.join(f"{key}: {value}" for key, value in doc.metadata.items())
-
-                    # Combine page content with its metadata
                     doc_str = f"{doc.page_content}\nMetadata: {metadata_str}"
-
-                    # Append to the list of formatted documents
                     formatted_docs.append(doc_str)
-
-                # Join all formatted documents with double newlines
                 return "\n\n".join(formatted_docs)
 
             rag_chain = (
@@ -70,13 +94,30 @@ class rag_tool:
             logger.exception("Error processing the query")
             raise RetrievalError(f"Error processing the query: {e}")
 
-class report_tool(BaseTool):
+
+class ReportTool(BaseTool):
+    """
+    A tool to retrieve relevant documents from the vector database using user queries.
+    """
     name: str = "Report Tool"
     description: str = "Tool to retrieve relevant documents from the vector database using a list of user queries and return a response."
 
-    def _run(self, queries: List[str]) -> str:
+    def _run(self, queries: List[str]) -> List[str]:
+        """
+        Run the tool with the provided queries and return the results.
+
+        Args:
+            queries (List[str]): The list of queries to process.
+
+        Returns:
+            List[str]: The list of retrieved documents.
+
+        Raises:
+            DataProcessingError: If there is an error processing the queries.
+        """
         try:
             logger.info("Running report tool with queries: %s", queries)
+
             # Setup
             qdrant_url = os.getenv('QDRANT_URL')
             qdrant_api_key = os.getenv('QDRANT_API_KEY')
@@ -98,7 +139,7 @@ class report_tool(BaseTool):
                 response = qdrant_client.search(
                     collection_name="policy-agent",
                     query_vector=query_result,
-                    limit=2  # Retrieve top 10 closest vectors
+                    limit=2  # Retrieve top 2 closest vectors
                 )
 
                 responses.append(response)
