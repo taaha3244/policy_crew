@@ -1,5 +1,6 @@
 import sys
 import os
+sys.path.append('D:/POLICY_CREW')
 from crewai import Crew, Process
 from backend.tools import RAGTool
 from backend.agents import ReportAgents
@@ -9,6 +10,7 @@ from openai import OpenAI
 from dotenv import load_dotenv
 from backend.custom_logger import logger
 from backend.custom_exceptions import CustomException
+from backend.langraph import WorkflowManager 
 
 # Load environment variables
 load_dotenv()
@@ -130,6 +132,69 @@ class CrewManager:
             raise CustomException(f"Error starting crew: {e}", sys)
 
 
+
+
+
+
+
+class LangraphManager:
+    """
+    Manages the conditional execution of RAG tool or Langraph workflow.
+
+    Attributes:
+        crew_manager (CrewManager): An instance of CrewManager.
+    """
+
+    def __init__(self, prompt: str):
+        """
+        Initializes the LangraphManager with a user prompt.
+
+        Args:
+            prompt (str): The user query or prompt.
+        """
+        self.crew_manager = CrewManager(prompt)
+        self.prompt = prompt
+        self.rag_tool=RAGTool(prompt)
+
+    def run_workflow(self) -> str:
+        """
+        Run the conditional workflow based on the query classification.
+
+        Returns:
+            str: The result of the workflow processing.
+        """
+        try:
+            openai_response = self.crew_manager.get_openai_response()
+            if openai_response.is_generic:
+                rag=self.rag_tool
+                rag_result = rag.qa_from_RAG()
+                logger.info(f"RAG result: {rag_result}")
+                return rag_result
+            else:
+                return self.run_langraph_workflow()
+        except Exception as e:
+            logger.error(f"Error running conditional workflow: {str(e)}")
+            raise CustomException(f"Error running conditional workflow: {e}", sys)
+
+    def run_langraph_workflow(self) -> str:
+        """
+        Run the langraph workflow.
+
+        Returns:
+            str: The result of the langraph workflow.
+        """
+        try:
+            openai_api_key = os.getenv("OPENAI_API_KEY")
+            workflow_manager = WorkflowManager(openai_api_key)
+            result = workflow_manager.run(self.prompt)
+            if result:
+                logger.info(f"Langraph workflow result: {result}")
+                return result
+            else:
+                raise ValueError("Langraph workflow returned None")
+        except Exception as e:
+            logger.error(f"Error running langraph workflow: {str(e)}")
+            raise CustomException(f"Error running langraph workflow: {e}", sys)
 # Uncomment for standalone testing
 # if __name__ == "__main__":
 #     prompt = "Your test prompt here"
@@ -138,3 +203,15 @@ class CrewManager:
 #     logger.info(f"OpenAI response: {openai_response}")
 #     result = manager.start_crew(openai_response.is_generic)
 #     print(result)
+
+
+# Uncomment for standalone testing
+# if __name__ == "__main__":
+#     try:
+#         prompt = "Make a detailed report on a solar retrofit project including well fare for elders."
+#         langraph_manager = LangraphManager(prompt)
+#         result = langraph_manager.run_workflow()
+#         print(result)
+#     except Exception as e:
+#         logger.error("Error in main execution.")
+#         raise CustomException(e, sys)

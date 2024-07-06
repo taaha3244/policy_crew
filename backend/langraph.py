@@ -244,21 +244,20 @@ class WorkflowManager:
             logger.error("Error during workflow setup.")
             raise CustomException(e, sys)
 
-    def run(self, initial_message: str):
+    def run(self, initial_message: str) -> str:
         try:
             final_state = self.graph.invoke(
                 {
                     "messages": [
-                        HumanMessage(
-                            content=initial_message
-                        )
+                        HumanMessage(content=initial_message)
                     ]
                 },
                 {"recursion_limit": 150}
             )
             final_response = final_state["messages"][-1]
             logger.info("Workflow run completed successfully.")
-            print(final_response.content)
+            logger.info(f"Final response content: {final_response.content}")
+            return final_response.content 
         except Exception as e:
             logger.error("Error during workflow run.")
             raise CustomException(e, sys)
