@@ -4,16 +4,15 @@ import streamlit as st
 from dotenv import load_dotenv
 import requests
 import sys
-import logging
+
 
 # Add the path to load_docs.py
 sys.path.append(os.path.join(os.path.dirname(__file__), 'backend'))
-from load_docs import PDFProcessor
+from backend.load_docs import PDFProcessor
+from backend.custom_logger import logger
+from backend.custom_exceptions import CustomException
 
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
-)
+
 
 # Load environment variables
 load_dotenv()
@@ -50,8 +49,14 @@ def send_query():
 
             st.session_state.query = ""
         except requests.exceptions.RequestException as e:
-            logging.error(f"Error sending query: {e}")
+            logger.error(f"Error sending query: {e}")
             st.error(f"Error: {e}")
+        except CustomException as ce:
+            logger.error(f"CustomException: {str(ce)}")
+            st.error(f"CustomException: {str(ce)}")
+        except Exception as e:
+            logger.exception("Unexpected error occurred while sending query")
+            st.error("Internal server error")
 
 # Save uploaded files
 def save_uploaded_files(uploaded_files):
@@ -81,9 +86,12 @@ if st.sidebar.button("Load PDF from URL"):
                 st.sidebar.write(result)
             else:
                 st.sidebar.error(f"Failed to load data from URL: {url}")
-        except RuntimeError as e:
-            logging.error(f"Runtime error: {e}")
-            st.sidebar.error(str(e))
+        except CustomException as ce:
+            logger.error(f"CustomException: {str(ce)}")
+            st.sidebar.error(str(ce))
+        except Exception as e:
+            logger.exception(f"Unexpected error: {str(e)}")
+            st.sidebar.error("Internal server error")
 
 if uploaded_files:
     if st.sidebar.button("Process Uploaded PDFs"):
@@ -98,9 +106,12 @@ if uploaded_files:
                     st.sidebar.write(result)
                 else:
                     st.sidebar.error(f"Failed to load data from file: {original_name}")
-            except RuntimeError as e:
-                logging.error(f"Runtime error: {e}")
-                st.sidebar.error(str(e))
+            except CustomException as ce:
+                logger.error(f"CustomException: {str(ce)}")
+                st.sidebar.error(str(ce))
+            except Exception as e:
+                logger.exception(f"Unexpected error: {str(e)}")
+                st.sidebar.error("Internal server error")
 
 # Main page for Chat Functionality
 st.title("Chat with Query Processing and PDF Upload App")

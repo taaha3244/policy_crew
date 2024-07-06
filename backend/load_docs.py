@@ -1,12 +1,10 @@
-import logging
+import sys
+from backend.custom_logger import logger
+from backend.custom_exceptions import CustomException
 from langchain_community.document_loaders import PDFPlumberLoader, PyPDFLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.embeddings.openai import OpenAIEmbeddings
 from langchain.vectorstores.qdrant import Qdrant
-
-# Configure logging
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
-
 
 class PDFProcessor:
     """
@@ -43,24 +41,20 @@ class PDFProcessor:
             data: Loaded data from the PDF.
 
         Raises:
-            ValueError: If the URL is not a string.
-            RuntimeError: If there is an error loading the URL or no data is loaded.
+            CustomException: If there is an error loading the URL.
         """
         try:
-            logging.info(f"Loading from URL: {url}")
+            logger.info(f"Loading from URL: {url}")
             if not isinstance(url, str):
-                raise ValueError("URL must be a string")
+                raise CustomException("URL must be a string", sys)
             loader = PDFPlumberLoader(url)
             data = loader.load()
             if data is None:
-                raise RuntimeError(f"No data loaded from URL {url}")
+                raise CustomException(f"No data loaded from URL {url}", sys)
             return data
-        except ValueError as ve:
-            logging.error(f"ValueError: {ve}")
-            raise
         except Exception as e:
-            logging.error(f"Error loading URL {url}: {str(e)}")
-            raise RuntimeError(f"Error loading URL {url}: {str(e)}")
+            logger.error(f"Error loading URL {url}: {str(e)}")
+            raise CustomException(f"Error loading URL {url}: {str(e)}", sys)
 
     def load_from_file(self, file_path):
         """
@@ -73,24 +67,20 @@ class PDFProcessor:
             data: Loaded data from the PDF.
 
         Raises:
-            ValueError: If the file path is not a string.
-            RuntimeError: If there is an error loading the file or no data is loaded.
+            CustomException: If there is an error loading the file.
         """
         try:
-            logging.info(f"Loading from file: {file_path}")
+            logger.info(f"Loading from file: {file_path}")
             if not isinstance(file_path, str):
-                raise ValueError("File path must be a string")
+                raise CustomException("File path must be a string", sys)
             loader = PyPDFLoader(file_path)
             data = loader.load()
             if data is None:
-                raise RuntimeError(f"No data loaded from file {file_path}")
+                raise CustomException(f"No data loaded from file {file_path}", sys)
             return data
-        except ValueError as ve:
-            logging.error(f"ValueError: {ve}")
-            raise
         except Exception as e:
-            logging.error(f"Error loading file {file_path}: {str(e)}")
-            raise RuntimeError(f"Error loading file {file_path}: {str(e)}")
+            logger.error(f"Error loading file {file_path}: {str(e)}")
+            raise CustomException(f"Error loading file {file_path}: {str(e)}", sys)
 
     def split_and_store(self, data):
         """
@@ -100,18 +90,22 @@ class PDFProcessor:
             data: The data to split and store.
 
         Raises:
-            ValueError: If there is no data to split and store.
+            CustomException: If there is no data to split and store.
         """
-        if not data:
-            raise ValueError("No data to split and store")
+        try:
+            if not data:
+                raise CustomException("No data to split and store", sys)
 
-        text_splitter = RecursiveCharacterTextSplitter(
-            chunk_size=2000,
-            chunk_overlap=250
-        )
-        docs = text_splitter.split_documents(data)
-        self.all_docs.extend(docs)
-        logging.info("Documents split and stored successfully.")
+            text_splitter = RecursiveCharacterTextSplitter(
+                chunk_size=2000,
+                chunk_overlap=250
+            )
+            docs = text_splitter.split_documents(data)
+            self.all_docs.extend(docs)
+            logger.info("Documents split and stored successfully.")
+        except Exception as e:
+            logger.error(f"Error splitting and storing documents: {str(e)}")
+            raise CustomException(f"Error splitting and storing documents: {str(e)}", sys)
 
     def create_rag_system(self):
         """
@@ -135,9 +129,9 @@ class PDFProcessor:
                 collection_name="policy-agent",
             )
 
-            logging.info("RAG system created successfully.")
+            logger.info("RAG system created successfully.")
             return "RAG system created successfully with the given policy documents."
 
         except Exception as e:
-            logging.error(f"Error creating RAG system: {str(e)}")
-            return str(e)
+            logger.error(f"Error creating RAG system: {str(e)}")
+            raise CustomException(f"Error creating RAG system: {str(e)}", sys)

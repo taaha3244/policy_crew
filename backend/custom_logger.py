@@ -1,44 +1,35 @@
 import logging
 import os
+from datetime import datetime
+from logging.handlers import RotatingFileHandler
 
-def get_logger(name, log_file='app.log', console_level=logging.INFO, file_level=logging.ERROR):
-    """
-    Creates and returns a custom logger with specified name and log levels.
-    
-    Args:
-        name (str): The name of the logger.
-        log_file (str): The file path for the log file. Defaults to 'app.log'.
-        console_level (int): The log level for console output. Defaults to logging.INFO.
-        file_level (int): The log level for file output. Defaults to logging.ERROR.
-        
-    Returns:
-        logging.Logger: Configured logger.
-    """
-    logger = logging.getLogger(name)
+# Directory for log files
+logs_dir = os.path.join(os.getcwd(), "logs")
+os.makedirs(logs_dir, exist_ok=True)
 
-    # Check if the logger already has handlers to avoid duplicate logs
-    if not logger.hasHandlers():
-        # Set the log level (DEBUG, INFO, WARNING, ERROR, CRITICAL)
-        logger.setLevel(logging.DEBUG)
+# Log file name with timestamp
+log_file = f"{datetime.now().strftime('%m_%d_%Y_%H_%M_%S')}.log"
+log_file_path = os.path.join(logs_dir, log_file)
 
-        # Create handlers
-        console_handler = logging.StreamHandler()
-        file_handler = logging.FileHandler(log_file)
+# Create logger
+logger = logging.getLogger()
+logger.setLevel(logging.INFO)
 
-        # Set log levels for handlers
-        console_handler.setLevel(console_level)
-        file_handler.setLevel(file_level)
+# Create handlers
+file_handler = RotatingFileHandler(log_file_path, maxBytes=10*1024*1024, backupCount=5)  # 10 MB per file
+file_handler.setLevel(logging.INFO)
 
-        # Create formatters and add them to handlers
-        formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s [in %(pathname)s:%(lineno)d]')
-        console_handler.setFormatter(formatter)
-        file_handler.setFormatter(formatter)
+console_handler = logging.StreamHandler()
+console_handler.setLevel(logging.INFO)
 
-        # Add handlers to the logger
-        logger.addHandler(console_handler)
-        logger.addHandler(file_handler)
+# Create formatter and add it to the handlers
+formatter = logging.Formatter("[ %(asctime)s ] %(lineno)d %(name)s - %(levelname)s - %(message)s")
+file_handler.setFormatter(formatter)
+console_handler.setFormatter(formatter)
 
-    return logger
+# Add handlers to the logger
+logger.addHandler(file_handler)
+logger.addHandler(console_handler)
 
-# Example usage:
-# logger = get_logger(__name__, log_file='app.log', console_level=logging.INFO, file_level=logging.ERROR)
+if __name__ == "__main__":
+    logger.info("Logging has started")

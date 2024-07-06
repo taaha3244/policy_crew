@@ -1,53 +1,23 @@
 import sys
-from backend.custom_logger import get_logger
+import logging
 
-# Get the custom logger
-logger = get_logger(__name__)
+# Ensure the custom logger is imported
+from backend.custom_logger import logger
 
-def log_exception(exc_type, exc_value, exc_traceback):
-    """
-    Log uncaught exceptions with traceback.
-    
-    Args:
-        exc_type (type): Exception type.
-        exc_value (Exception): Exception instance.
-        exc_traceback (traceback): Traceback object.
-    """
-    if issubclass(exc_type, KeyboardInterrupt):
-        sys.__excepthook__(exc_type, exc_value, exc_traceback)
-        return
-    logger.error("Uncaught exception", exc_info=(exc_type, exc_value, exc_traceback))
-
-# Set the custom exception hook
-sys.excepthook = log_exception
+def error_message_detail(error, error_detail: sys):
+    _, _, exc_tb = error_detail.exc_info()
+    file_name = exc_tb.tb_frame.f_code.co_filename
+    error_message = (
+        "Error occurred in python script name [{0}] line number [{1}] error message [{2}]"
+        .format(file_name, exc_tb.tb_lineno, str(error))
+    )
+    return error_message
 
 class CustomException(Exception):
-    """
-    Base class for custom exceptions.
-    
-    Args:
-        message (str): Error message.
-    """
-    def __init__(self, message, *args):
-        super().__init__(message, *args)
-        logger.error(message, exc_info=True)
+    def __init__(self, error_message, error_detail: sys):
+        super().__init__(error_message)
+        self.error_message = error_message_detail(error_message, error_detail=error_detail)
+        logger.error(self.error_message)  # Log the error message
 
-class DataProcessingError(CustomException):
-    """
-    Exception raised for errors in the data processing.
-    
-    Args:
-        message (str): Error message. Defaults to "Error processing data".
-    """
-    def __init__(self, message="Error processing data", *args):
-        super().__init__(message, *args)
-
-class RetrievalError(CustomException):
-    """
-    Exception raised for errors in the retrieval process.
-    
-    Args:
-        message (str): Error message. Defaults to "Error retrieving data".
-    """
-    def __init__(self, message="Error retrieving data", *args):
-        super().__init__(message, *args)
+    def __str__(self):
+        return self.error_message

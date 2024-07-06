@@ -1,13 +1,13 @@
+import sys
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from backend.main import CrewManager
-from backend.custom_logger import get_logger
+from backend.custom_logger import logger
 from backend.database import get_database
 from pymongo.errors import PyMongoError
+from backend.custom_exceptions import CustomException
 
 app = FastAPI()
-
-logger = get_logger(__name__)
 
 # Get the database
 db = get_database()
@@ -51,6 +51,9 @@ async def process_query(query: QueryModel):
         
         return {"result": result}
     
+    except CustomException as ce:
+        logger.error(f"CustomException: {str(ce)}")
+        raise HTTPException(status_code=500, detail=str(ce))
     except Exception as e:
         logger.exception("Unexpected error occurred while processing the query")
         raise HTTPException(status_code=500, detail="Internal server error")

@@ -1,5 +1,5 @@
-import os
 import sys
+import os
 from crewai import Crew, Process
 from backend.tools import RAGTool
 from backend.agents import ReportAgents
@@ -7,27 +7,19 @@ from backend.tasks import ReportTasks
 from pydantic import BaseModel
 from openai import OpenAI
 from dotenv import load_dotenv
-from backend.custom_logger import get_logger
-from backend.custom_exceptions import log_exception
+from backend.custom_logger import logger
+from backend.custom_exceptions import CustomException
 
 # Load environment variables
 load_dotenv()
-
-# Setup custom exception hook
-sys.excepthook = log_exception
-
-# Get the custom logger
-logger = get_logger(__name__)
 
 # Set the OpenAI API key
 os.environ["OPENAI_API_KEY"] = os.getenv("OPENAI_API_KEY")
 os.environ["OPENAI_MODEL_NAME"] = "gpt-3.5-turbo"
 
-
 class OpenAIResponseModel(BaseModel):
     """Pydantic model for the OpenAI response."""
     is_generic: bool
-
 
 class CrewManager:
     """
@@ -86,7 +78,7 @@ class CrewManager:
             return OpenAIResponseModel(is_generic=is_generic)
         except Exception as e:
             logger.error(f"Error getting OpenAI response: {str(e)}")
-            raise
+            raise CustomException(f"Error getting OpenAI response: {e}", sys)
 
     def start_crew(self, is_generic: bool) -> str:
         """
@@ -135,7 +127,7 @@ class CrewManager:
                 return result
         except Exception as e:
             logger.error(f"Error starting crew: {str(e)}")
-            raise
+            raise CustomException(f"Error starting crew: {e}", sys)
 
 
 # Uncomment for standalone testing

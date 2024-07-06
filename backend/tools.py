@@ -1,4 +1,5 @@
 import os
+import sys
 from dotenv import load_dotenv
 from qdrant_client import QdrantClient
 from langchain.embeddings.openai import OpenAIEmbeddings
@@ -9,14 +10,11 @@ from langchain_core.output_parsers import StrOutputParser
 from langchain import hub
 from crewai_tools import BaseTool
 from typing import List
-from backend.custom_logger import get_logger
-from backend.custom_exceptions import RetrievalError, DataProcessingError
+from backend.custom_logger import logger
+from backend.custom_exceptions import CustomException
 
 # Load environment variables
 load_dotenv()
-
-# Initialize the logger
-logger = get_logger(__name__)
 
 class RAGTool:
     """
@@ -43,7 +41,7 @@ class RAGTool:
             str: The result of processing the query.
 
         Raises:
-            RetrievalError: If there is an error retrieving or processing the query.
+            CustomException: If there is an error retrieving or processing the query.
         """
         try:
             logger.info("Initializing RAG tool with query: %s", self.query)
@@ -54,7 +52,7 @@ class RAGTool:
             openai_api_key = os.getenv('OPENAI_API_KEY')
 
             if not qdrant_url or not qdrant_api_key or not openai_api_key:
-                raise RetrievalError("Missing environment variables for Qdrant or OpenAI")
+                raise CustomException("Missing environment variables for Qdrant or OpenAI", sys)
 
             embeddings_model = OpenAIEmbeddings(model='text-embedding-ada-002', openai_api_key=openai_api_key)
             qdrant_client = QdrantClient(url=qdrant_url, api_key=qdrant_api_key)
@@ -92,7 +90,7 @@ class RAGTool:
             return result
         except Exception as e:
             logger.exception("Error processing the query")
-            raise RetrievalError(f"Error processing the query: {e}")
+            raise CustomException(f"Error processing the query: {e}", sys)
 
 
 class ReportTool(BaseTool):
@@ -113,7 +111,7 @@ class ReportTool(BaseTool):
             List[str]: The list of retrieved documents.
 
         Raises:
-            DataProcessingError: If there is an error processing the queries.
+            CustomException: If there is an error processing the queries.
         """
         try:
             logger.info("Running report tool with queries: %s", queries)
@@ -124,7 +122,7 @@ class ReportTool(BaseTool):
             openai_api_key = os.getenv('OPENAI_API_KEY')
 
             if not qdrant_url or not qdrant_api_key or not openai_api_key:
-                raise RetrievalError("Missing environment variables for Qdrant or OpenAI")
+                raise CustomException("Missing environment variables for Qdrant or OpenAI", sys)
 
             embeddings_model = OpenAIEmbeddings(model='text-embedding-ada-002', openai_api_key=openai_api_key)
             qdrant_client = QdrantClient(url=qdrant_url, api_key=qdrant_api_key)
@@ -148,4 +146,4 @@ class ReportTool(BaseTool):
             return responses
         except Exception as e:
             logger.exception("Error processing the queries")
-            raise DataProcessingError(f"Error processing the queries: {e}")
+            raise CustomException(f"Error processing the queries: {e}", sys)
