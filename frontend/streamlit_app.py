@@ -114,7 +114,7 @@ if uploaded_files:
                 st.sidebar.error("Internal server error")
 
 # Main page for Chat Functionality
-st.title("Chat with Query Processing and PDF Upload App")
+st.title("Multi Agent Policy Extractor")
 
 # Display chat history
 for message in st.session_state["chat_history"]:

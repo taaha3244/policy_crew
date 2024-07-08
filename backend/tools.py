@@ -7,6 +7,8 @@ from langchain.vectorstores.qdrant import Qdrant
 from langchain_openai import ChatOpenAI
 from langchain_core.runnables import RunnablePassthrough
 from langchain_core.output_parsers import StrOutputParser
+from langchain.retrievers import ContextualCompressionRetriever
+from langchain_community.document_compressors import JinaRerank
 from langchain import hub
 from crewai_tools import BaseTool
 from typing import List
@@ -50,16 +52,21 @@ class RAGTool:
             qdrant_url = os.getenv('QDRANT_URL')
             qdrant_api_key = os.getenv('QDRANT_API_KEY')
             openai_api_key = os.getenv('OPENAI_API_KEY')
+            jina_api_key=os.getenv('JINA_API_KEY')
 
             if not qdrant_url or not qdrant_api_key or not openai_api_key:
-                raise CustomException("Missing environment variables for Qdrant or OpenAI", sys)
+                raise CustomException("Missing environment variables for Qdrant , OpenAI or JINA", sys)
 
             embeddings_model = OpenAIEmbeddings(model='text-embedding-ada-002', openai_api_key=openai_api_key)
             qdrant_client = QdrantClient(url=qdrant_url, api_key=qdrant_api_key)
             qdrant = Qdrant(client=qdrant_client, collection_name="policy-agent", embeddings=embeddings_model)
-            retriever = qdrant.as_retriever(search_kwargs={"k": 5})
+            retriever = qdrant.as_retriever(search_kwargs={"k": 20})
             prompt = hub.pull('pwoc517/more-crafted-rag-prompt')
             llm = ChatOpenAI(model_name="gpt-3.5-turbo", temperature=0.2, openai_api_key=openai_api_key)
+            compressor = JinaRerank(jina_api_key=jina_api_key,top_n=5)
+            compression_retriever = ContextualCompressionRetriever(
+            base_compressor=compressor, base_retriever=retriever
+            )
 
             def format_docs(docs):
                 """
@@ -79,7 +86,7 @@ class RAGTool:
                 return "\n\n".join(formatted_docs)
 
             rag_chain = (
-                {"context": retriever | format_docs, "question": RunnablePassthrough()}
+                {"context": compression_retriever | format_docs, "question": RunnablePassthrough()}
                 | prompt
                 | llm
                 | StrOutputParser()
@@ -120,6 +127,7 @@ class ReportTool(BaseTool):
             qdrant_url = os.getenv('QDRANT_URL')
             qdrant_api_key = os.getenv('QDRANT_API_KEY')
             openai_api_key = os.getenv('OPENAI_API_KEY')
+            jina_api_key=os.getenv('JINA_API_KEY')
 
             if not qdrant_url or not qdrant_api_key or not openai_api_key:
                 raise CustomException("Missing environment variables for Qdrant or OpenAI", sys)
@@ -127,20 +135,18 @@ class ReportTool(BaseTool):
             embeddings_model = OpenAIEmbeddings(model='text-embedding-ada-002', openai_api_key=openai_api_key)
             qdrant_client = QdrantClient(url=qdrant_url, api_key=qdrant_api_key)
             qdrant = Qdrant(client=qdrant_client, collection_name="policy-agent", embeddings=embeddings_model)
+            retriever = qdrant.as_retriever(search_kwargs={"k": 15})
+            compressor = JinaRerank(jina_api_key=jina_api_key,top_n=3)
+            compression_retriever = ContextualCompressionRetriever(
+            base_compressor=compressor, base_retriever=retriever
+            )
+
 
             responses = []
             for query in queries:
                 # Embed the input query for vector search
-                query_result = embeddings_model.embed_query(query)
-
-                # Perform vector search in the "policy-agent" collection
-                response = qdrant_client.search(
-                    collection_name="policy-agent",
-                    query_vector=query_result,
-                    limit=2  # Retrieve top 2 closest vectors
-                )
-
-                responses.append(response)
+                query_result = compression_retriever.invoke(query)
+                responses.append(query_result)
 
             logger.info("Queries processed successfully: %s", queries)
             return responses
