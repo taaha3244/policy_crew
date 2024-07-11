@@ -1,61 +1,62 @@
 import os
-import pymongo
+import redis
 import logging
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 # Configure logging
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
-def get_database():
+REDIS_HOST = os.getenv('REDIS_HOST')
+REDIS_PORT = int(os.getenv('REDIS_PORT'))
+REDIS_PASSWORD = os.getenv('REDIS_PASSWORD')
+REDIS_DB = int(os.getenv('REDIS_DB', 0))
+
+def get_redis_client():
     """
-    Establish a connection to the MongoDB database.
+    Establish a connection to the Redis database.
 
     Returns:
-        db: A reference to the MongoDB database.
+        r: A reference to the Redis client.
     """
     try:
-        mongodb_url = os.getenv('MONGODB_URL')
-        logger.debug(f"Connecting to MongoDB with URL: {mongodb_url}")
-        if not mongodb_url:
-            raise ValueError("MONGODB_URL environment variable is not set.")
+        logger.debug(f"Connecting to Redis with HOST: {REDIS_HOST}, PORT: {REDIS_PORT}, DB: {REDIS_DB}")
+        if not REDIS_HOST or not REDIS_PORT or not REDIS_PASSWORD:
+            raise ValueError("Redis connection details are not set in environment variables.")
         
-        client = pymongo.MongoClient(mongodb_url)
-        logger.info('Successfully connected to MongoDB')
+        r = redis.Redis(
+            host=REDIS_HOST,
+            port=REDIS_PORT,
+            password=REDIS_PASSWORD
+        )
+        # Test the connection
+        r.ping()
+        logger.info('Successfully connected to Redis')
         
-        # Use a database named "myDatabase"
-        db = client.myDatabase
-        return db
+        return r
     
-    except pymongo.errors.ConfigurationError as e:
-        logger.error("Invalid URI host error:", exc_info=True)
-        raise ValueError("An Invalid URI host error was received. Check your Atlas host name in the connection string.")
-    
-    except pymongo.errors.ConnectionError as e:
-        logger.error("MongoDB connection error:", exc_info=True)
-        raise ValueError("Unable to connect to MongoDB. Check your network connection and MongoDB configuration.")
+    except redis.ConnectionError as e:
+        logger.error("Redis connection error:", exc_info=True)
+        raise ValueError("Unable to connect to Redis. Check your network connection and Redis configuration.")
     
     except Exception as e:
         logger.error("Unexpected error:", exc_info=True)
         raise ValueError(f"An unexpected error occurred: {e}")
 
-def insert_sample_document():
-    try:
-        db = get_database()
-        questions_collection = db["questions"]
-        
-        sample_document = {
-            "question": "What is the capital of France?",
-            "response": "Paris"
-        }
-        
-        result = questions_collection.insert_one(sample_document)
-        if result.acknowledged:
-            logger.info(f"Document inserted with ID: {result.inserted_id}")
-        else:
-            logger.error("Failed to insert document.")
-    except Exception as e:
-        logger.error(f"Error inserting document: {e}")
+# Get Redis client
+redis_client = get_redis_client()
 
 # Example usage
 if __name__ == "__main__":
-    insert_sample_document()
+    try:
+        redis_client = get_redis_client()
+        # Example Redis operations
+        redis_client.set('key', 'value')
+        print(redis_client.get('key'))  # Output: b'value'
+    except Exception as e:
+        logger.error(f"Failed to use Redis client: {e}")
+
+__all__ = ["redis_client"]

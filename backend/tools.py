@@ -9,6 +9,16 @@ from langchain_core.runnables import RunnablePassthrough
 from langchain_core.output_parsers import StrOutputParser
 from langchain.retrievers import ContextualCompressionRetriever
 from langchain_community.document_compressors import JinaRerank
+from llama_index.core import PropertyGraphIndex
+from llama_index.embeddings.openai import OpenAIEmbedding as LlamaindexOpenAIEmbeddings
+from llama_index.llms.openai import OpenAI as LlamaindexOpenAI
+from llama_index.graph_stores.neo4j import Neo4jPropertyGraphStore
+import nest_asyncio
+from llama_index.core.indices.property_graph import (
+    LLMSynonymRetriever,
+    VectorContextRetriever,
+)
+
 from langchain import hub
 from crewai_tools import BaseTool
 from typing import List
@@ -153,3 +163,71 @@ class ReportTool(BaseTool):
         except Exception as e:
             logger.exception("Error processing the queries")
             raise CustomException(f"Error processing the queries: {e}", sys)
+
+
+#Retrieval Class for project
+
+class GraphRagTool:
+    """ A class for creating Graph RAG tool for AI agents """
+
+    def __init__(self, query):
+        """
+        Initialize the GraphRAG with the given query.
+
+        Args:
+            query (str): The query to process.
+        """
+        self.query = query
+        self.openai_api_key = os.getenv('OPENAI_API_KEY')
+        self.neo4j_url = os.getenv('NEO4J_URL')
+        self.neo4j_password = os.getenv('NEO4J_PASSWORD')
+        self.embed_model = LlamaindexOpenAIEmbeddings(model_name="text-embedding-3-small", api_key=self.openai_api_key)
+        self.llm = LlamaindexOpenAI(model="gpt-3.5-turbo", temperature=0.0, api_key=self.openai_api_key)
+        self.graph_store = Neo4jPropertyGraphStore(
+            username="neo4j",
+            password=self.neo4j_password,
+            url=self.neo4j_url
+        )
+
+    def load_neo4j_graph(self):
+        """
+        Load from existing graph/vector store and process the query.
+
+        Returns:
+            str: The result of the query.
+
+        Raises:
+            CustomException: If there is an error retrieving or processing the query.
+        """
+        try:
+            logger.info("Initializing Graph RAG Tool with query: %s", self.query)
+            nest_asyncio.apply()
+            # Load from existing graph/vector store
+            index = PropertyGraphIndex.from_existing(
+                property_graph_store=self.graph_store,
+                embed_kg_nodes=True,
+                llm=self.llm,
+            )
+
+            llm_synonym = LLMSynonymRetriever(
+                index.property_graph_store,
+                llm=self.llm,
+                include_text=True,
+            )
+            vector_context = VectorContextRetriever(
+                index.property_graph_store,
+                embed_model=self.embed_model,
+                include_text=True,
+            )
+            query_engine = index.as_query_engine(
+                sub_retrievers=[llm_synonym, vector_context],
+                include_text=True
+            )
+
+            response = query_engine.query(self.query)
+            logger.info("Query processed successfully: %s", self.query)
+            return response.response
+        except Exception as e:
+            logger.exception("Error processing the query")
+            raise CustomException(f"Error processing the query: {e}", sys)
+

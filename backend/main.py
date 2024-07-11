@@ -2,7 +2,7 @@ import sys
 import os
 sys.path.append('D:/POLICY_CREW')
 from crewai import Crew, Process
-from backend.tools import RAGTool
+from backend.tools import RAGTool, GraphRagTool
 from backend.agents import ReportAgents
 from backend.tasks import ReportTasks
 from pydantic import BaseModel
@@ -155,6 +155,7 @@ class LangraphManager:
         self.crew_manager = CrewManager(prompt)
         self.prompt = prompt
         self.rag_tool=RAGTool(prompt)
+        self.graph_rag_tool=GraphRagTool(prompt)
 
     def run_workflow(self) -> str:
         """
@@ -166,8 +167,8 @@ class LangraphManager:
         try:
             openai_response = self.crew_manager.get_openai_response()
             if openai_response.is_generic:
-                rag=self.rag_tool
-                rag_result = rag.qa_from_RAG()
+                rag=self.graph_rag_tool
+                rag_result = rag.load_neo4j_graph()
                 logger.info(f"RAG result: {rag_result}")
                 return rag_result
             else:
@@ -195,6 +196,10 @@ class LangraphManager:
         except Exception as e:
             logger.error(f"Error running langraph workflow: {str(e)}")
             raise CustomException(f"Error running langraph workflow: {e}", sys)
+       
+
+
+
 # Uncomment for standalone testing
 # if __name__ == "__main__":
 #     prompt = "Your test prompt here"
