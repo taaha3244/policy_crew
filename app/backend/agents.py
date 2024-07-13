@@ -1,6 +1,6 @@
 from textwrap import dedent
 from crewai import Agent
-from backend.tools import ReportTool
+from app.backend.tools import ReportTool
 
 class ReportAgents:
     """

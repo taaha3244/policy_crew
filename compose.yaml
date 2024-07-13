@@ -4,34 +4,31 @@ services:
   backend:
     build:
       context: .
-      dockerfile: backend/Dockerfile
-    container_name: backend
+      dockerfile: app/backend/Dockerfile
     env_file:
       - .env
+    volumes:
+      - ./app/backend:/app/backend
     ports:
       - "8000:8000"
-    depends_on:
-      - mongo
+    networks:
+      - policy_network
 
   frontend:
     build:
       context: .
-      dockerfile: frontend/Dockerfile
-    container_name: frontend
+      dockerfile: app/frontend/Dockerfile
     env_file:
       - .env
+    volumes:
+      - ./app/frontend:/app/frontend
     ports:
       - "8501:8501"
     depends_on:
       - backend
+    networks:
+      - policy_network
 
-  mongo:
-    image: mongo:latest
-    container_name: mongo
-    ports:
-      - "27017:27017"
-    volumes:
-      - mongo-data:/data/db
-
-volumes:
-  mongo-data:
+networks:
+  policy_network:
+    driver: bridge

@@ -22,8 +22,8 @@ from llama_index.core.indices.property_graph import (
 from langchain import hub
 from crewai_tools import BaseTool
 from typing import List
-from backend.custom_logger import logger
-from backend.custom_exceptions import CustomException
+from custom_logger import logger
+from custom_exceptions import CustomException
 
 # Load environment variables
 load_dotenv()
@@ -188,7 +188,8 @@ class GraphRagTool:
             password=self.neo4j_password,
             url=self.neo4j_url
         )
-
+        if not self.neo4j_url :
+                raise CustomException("Missing environment variables for Neo4j", sys)
     def load_neo4j_graph(self):
         """
         Load from existing graph/vector store and process the query.

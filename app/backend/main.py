@@ -1,16 +1,15 @@
 import sys
 import os
-sys.path.append('D:/POLICY_CREW')
 from crewai import Crew, Process
-from backend.tools import RAGTool, GraphRagTool
-from backend.agents import ReportAgents
-from backend.tasks import ReportTasks
+from app.backend.tools import RAGTool, GraphRagTool
+from app.backend.agents import ReportAgents
+from app.backend.tasks import ReportTasks
 from pydantic import BaseModel
 from openai import OpenAI
 from dotenv import load_dotenv
-from backend.custom_logger import logger
-from backend.custom_exceptions import CustomException
-from backend.langraph import WorkflowManager 
+from custom_logger import logger
+from custom_exceptions import CustomException
+from app.backend.langraph import WorkflowManager 
 
 # Load environment variables
 load_dotenv()

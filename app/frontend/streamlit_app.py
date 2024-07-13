@@ -5,27 +5,27 @@ from dotenv import load_dotenv
 import requests
 import sys
 
-
 # Add the path to load_docs.py
-sys.path.append(os.path.join(os.path.dirname(__file__), 'backend'))
+sys.path.append(os.path.join(os.path.dirname(__file__), 'D:/POLICY_CREW'))
 from backend.load_docs import PDFProcessor
 from backend.custom_logger import logger
 from backend.custom_exceptions import CustomException
-
-
 
 # Load environment variables
 load_dotenv()
 
 # URL of the FastAPI backend
-FASTAPI_URL = os.getenv("FASTAPI_URL", "http://backend:8000/process_query/")
+FASTAPI_URL = os.getenv("FASTAPI_URL", "http://backend:8000")
 
 # Initialize session state if it does not exist
 if "chat_history" not in st.session_state:
     st.session_state["chat_history"] = []
 
-if "query" not in st.session_state:
-    st.session_state["query"] = ""
+if "query_crew_ai" not in st.session_state:
+    st.session_state["query_crew_ai"] = ""
+
+if "query_langraph" not in st.session_state:
+    st.session_state["query_langraph"] = ""
 
 # Initialize PDFProcessor
 openai_api_key = os.getenv("OPENAI_API_KEY")
@@ -34,20 +34,20 @@ qdrant_api_key = os.getenv("QDRANT_API_KEY")
 pdf_processor = PDFProcessor(openai_api_key, qdrant_url, qdrant_api_key)
 
 # Function to handle sending the query
-def send_query():
-    if st.session_state.query:
+def send_query(query_key, endpoint):
+    if st.session_state[query_key]:
         try:
             response = requests.post(
-                FASTAPI_URL, json={"query": st.session_state.query}
+                f"{FASTAPI_URL}{endpoint}", json={"query": st.session_state[query_key]}
             )
             response.raise_for_status()
 
             result = response.json().get("result", "No result found")
 
-            st.session_state.chat_history.append(f"User: {st.session_state.query}")
+            st.session_state.chat_history.append(f"User: {st.session_state[query_key]}")
             st.session_state.chat_history.append(f"Bot: {result}")
 
-            st.session_state.query = ""
+            st.session_state[query_key] = ""
         except requests.exceptions.RequestException as e:
             logger.error(f"Error sending query: {e}")
             st.error(f"Error: {e}")
@@ -116,9 +116,23 @@ if uploaded_files:
 # Main page for Chat Functionality
 st.title("Multi Agent Policy Extractor")
 
-# Display chat history
-for message in st.session_state["chat_history"]:
-    st.write(message)
+# Create tabs for different pages
+tab1, tab2 = st.tabs(["Crew AI", "Langraph Agent/Graph RAG"])
 
-# Input text box for the query
-st.text_area("Your message:", key="query", height=100, on_change=send_query)
+# Crew AI tab
+with tab1:
+    # Display chat history
+    for message in st.session_state["chat_history"]:
+        st.write(message)
+    
+    # Input text box for the query
+    st.text_area("Your message:", key="query_crew_ai", height=100, on_change=lambda: send_query("query_crew_ai", "/process_query/"))
+
+# Langraph Agent/Graph RAG tab
+with tab2:
+    # Display chat history
+    for message in st.session_state["chat_history"]:
+        st.write(message)
+    
+    # Input text box for the query
+    st.text_area("Your message:", key="query_langraph", height=100, on_change=lambda: send_query("query_langraph", "/process_query_langraph/"))
