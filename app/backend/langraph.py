@@ -22,8 +22,8 @@ import operator
 from typing import Annotated, Sequence, TypedDict
 
 # Import custom logger and exceptions
-from backend.custom_logger import logger
-from backend.custom_exceptions import CustomException
+from custom_logger import logger
+from custom_exceptions import CustomException
 
 load_dotenv()
 

@@ -1,7 +1,7 @@
 import os
 from crewai import Task
 from textwrap import dedent
-from backend.tools import ReportTool
+from app.backend.tools import ReportTool
 
 class ReportTasks:
     """

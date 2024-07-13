@@ -1,6 +1,11 @@
 import sys
-from backend.custom_logger import logger
-from backend.custom_exceptions import CustomException
+import os
+
+# Ensure the backend module is found
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
+
+from custom_logger import logger
+from custom_exceptions import CustomException
 from langchain_community.document_loaders import PDFPlumberLoader, PyPDFLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.embeddings.openai import OpenAIEmbeddings

@@ -1,10 +1,11 @@
 import sys
+import redis
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
-from backend.main import CrewManager, LangraphManager  # Import LangraphManager
-from backend.custom_logger import logger
-from backend.database import redis_client  # Import redis_client from database.py
-from backend.custom_exceptions import CustomException
+from app.backend.main import CrewManager, LangraphManager  # Import LangraphManager
+from custom_logger import logger
+from app.backend.database import redis_client  # Import redis_client from database.py
+from custom_exceptions import CustomException
 
 app = FastAPI()
 
@@ -14,6 +15,7 @@ class QueryModel(BaseModel):
 class QuestionResponse(BaseModel):
     question: str
     response: str
+    agent: str
 
 @app.post("/process_query/")
 async def process_query(query: QueryModel):
@@ -34,7 +36,14 @@ async def process_query(query: QueryModel):
         logger.info(f"OpenAI response: {openai_response}")
 
         result = manager.start_crew(openai_response.is_generic)
-        question_response = QuestionResponse(question=query.query, response=result)
+        
+        agent_name = "Crew AI RAG" if openai_response.is_generic else "Crew AI AI agent"
+        
+        question_response = QuestionResponse(
+            question=query.query, 
+            response=result,
+            agent=agent_name
+        )
         
         # Attempt to save the question and response to Redis
         try:
@@ -73,7 +82,13 @@ async def process_query_langraph(query: QueryModel):
         if result is None:
             raise ValueError("Langraph workflow returned None")
         
-        question_response = QuestionResponse(question=query.query, response=result)
+        agent_name = "Langraph Graph RAG" if langraph_manager.crew_manager.get_openai_response().is_generic else "Langraph AI agent"
+        
+        question_response = QuestionResponse(
+            question=query.query, 
+            response=result,
+            agent=agent_name
+        )
         
         # Attempt to save the question and response to Redis
         try:
