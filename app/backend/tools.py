@@ -18,7 +18,7 @@ from llama_index.core.indices.property_graph import (
     LLMSynonymRetriever,
     VectorContextRetriever,
 )
-
+from app.backend.prompt import prompt_template
 from langchain import hub
 from crewai_tools import BaseTool
 from typing import List
@@ -71,7 +71,7 @@ class RAGTool:
             qdrant_client = QdrantClient(url=qdrant_url, api_key=qdrant_api_key)
             qdrant = Qdrant(client=qdrant_client, collection_name="policy-agent", embeddings=embeddings_model)
             retriever = qdrant.as_retriever(search_kwargs={"k": 20})
-            prompt = hub.pull('pwoc517/more-crafted-rag-prompt')
+            prompt = prompt_template
             llm = ChatOpenAI(model_name="gpt-3.5-turbo", temperature=0.2, openai_api_key=openai_api_key)
             compressor = JinaRerank(jina_api_key=jina_api_key,top_n=5)
             compression_retriever = ContextualCompressionRetriever(
