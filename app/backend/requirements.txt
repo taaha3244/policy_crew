@@ -1,5 +1,5 @@
-crewai==0.28.8
-crewai_tools==0.1.6 
+crewai
+crewai_tools
 langchain_community  
 langchain_openai 
 qdrant-client 

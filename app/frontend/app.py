@@ -4,7 +4,7 @@ import os
 import sys
 
 # Directly add the project root directory
-project_root = "D:\\policy_crew"
+project_root = "\policy_crew"
 if project_root not in sys.path:
     sys.path.insert(0, project_root)
 
