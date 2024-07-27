@@ -1,5 +1,4 @@
 import sys
-import logging
 
 # Ensure the custom logger is imported
 from custom_logger import logger

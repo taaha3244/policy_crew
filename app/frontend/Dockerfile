@@ -7,11 +7,14 @@ WORKDIR /policy_crew
 # Set the PYTHONPATH environment variable to the working directory
 ENV PYTHONPATH=/policy_crew
 
-# Copy the entire project to the working directory
-COPY . /policy_crew
+# Copy the requirements file first to leverage Docker cache
+COPY app/frontend/requirements.txt /policy_crew/app/frontend/requirements.txt
 
 # Install any needed packages specified in requirements.txt
 RUN pip install --no-cache-dir -r /policy_crew/app/frontend/requirements.txt
+
+# Copy the entire project to the working directory
+COPY . /policy_crew
 
 # Make port 8501 available to the world outside this container
 EXPOSE 8501

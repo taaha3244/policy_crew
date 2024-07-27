@@ -2,8 +2,8 @@ import os
 import sys
 from dotenv import load_dotenv
 from qdrant_client import QdrantClient
-from langchain.embeddings.openai import OpenAIEmbeddings
-from langchain.vectorstores.qdrant import Qdrant
+from langchain_community.embeddings import OpenAIEmbeddings
+from langchain_community.vectorstores import Qdrant
 from langchain_openai import ChatOpenAI
 from langchain_core.runnables import RunnablePassthrough
 from langchain_core.output_parsers import StrOutputParser
@@ -18,8 +18,8 @@ from llama_index.core.indices.property_graph import (
     LLMSynonymRetriever,
     VectorContextRetriever,
 )
-from app.backend.prompt import prompt_template
-from langchain import hub
+from app.backend.utils import get_hyperparameters_from_file
+from langchain.prompts import PromptTemplate
 from crewai_tools import BaseTool
 from typing import List
 from custom_logger import logger
@@ -27,6 +27,8 @@ from custom_exceptions import CustomException
 
 # Load environment variables
 load_dotenv()
+# Loading hyper parameters from the yaml file
+config= get_hyperparameters_from_file()
 
 class RAGTool:
     """
@@ -64,15 +66,19 @@ class RAGTool:
             openai_api_key = os.getenv('OPENAI_API_KEY')
             jina_api_key=os.getenv('JINA_API_KEY')
 
-            if not qdrant_url or not qdrant_api_key or not openai_api_key:
+            if not qdrant_url or not qdrant_api_key or not openai_api_key or not jina_api_key:
                 raise CustomException("Missing environment variables for Qdrant , OpenAI or JINA", sys)
 
             embeddings_model = OpenAIEmbeddings(model='text-embedding-ada-002', openai_api_key=openai_api_key)
             qdrant_client = QdrantClient(url=qdrant_url, api_key=qdrant_api_key)
             qdrant = Qdrant(client=qdrant_client, collection_name="policy-agent", embeddings=embeddings_model)
             retriever = qdrant.as_retriever(search_kwargs={"k": 20})
-            prompt = prompt_template
-            llm = ChatOpenAI(model_name="gpt-3.5-turbo", temperature=0.2, openai_api_key=openai_api_key)
+            prompt = PromptTemplate(
+
+            template=config['PROMPT_TEMPLATE'],
+            input_variables=["context","question"]
+    )
+            llm = ChatOpenAI(model_name=config['LLM_NAME'], temperature=0.2, openai_api_key=openai_api_key)
             compressor = JinaRerank(jina_api_key=jina_api_key,top_n=5)
             compression_retriever = ContextualCompressionRetriever(
             base_compressor=compressor, base_retriever=retriever
@@ -182,7 +188,7 @@ class GraphRagTool:
         self.neo4j_url = os.getenv('NEO4J_URL')
         self.neo4j_password = os.getenv('NEO4J_PASSWORD')
         self.embed_model = LlamaindexOpenAIEmbeddings(model_name="text-embedding-3-small", api_key=self.openai_api_key)
-        self.llm = LlamaindexOpenAI(model="gpt-3.5-turbo", temperature=0.0, api_key=self.openai_api_key)
+        self.llm = LlamaindexOpenAI(model=config["LLM_NAME"], temperature=0.0, api_key=self.openai_api_key)
         self.graph_store = Neo4jPropertyGraphStore(
             username="neo4j",
             password=self.neo4j_password,

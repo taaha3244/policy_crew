@@ -1,26 +1,32 @@
 import sys
 import os
+# Directly set the project root directory
+project_root = "D:/policy_crew"
+# Ensure the project root is at the top of sys.path
+sys.path.insert(0, project_root)
 from crewai import Crew, Process
 from app.backend.tools import RAGTool, GraphRagTool
-from app.backend.agents import ReportAgents
-from app.backend.tasks import ReportTasks
-from pydantic import BaseModel
-from openai import OpenAI
+from app.backend.crewai_agent.agents import ReportAgents
+from app.backend.crewai_agent.tasks import ReportTasks
 from dotenv import load_dotenv
 from custom_logger import logger
 from custom_exceptions import CustomException
-from app.backend.langraph import WorkflowManager 
-
+from app.backend.langgraph_agent.langraph import WorkflowManager
+from app.backend.utils import get_hyperparameters_from_file 
+from pydantic import BaseModel
+from app.backend.utils import get_openai_response
 # Load environment variables
 load_dotenv()
-
+# Loading hyper parameters from the yaml file
+config= get_hyperparameters_from_file()
 # Set the OpenAI API key
 os.environ["OPENAI_API_KEY"] = os.getenv("OPENAI_API_KEY")
-os.environ["OPENAI_MODEL_NAME"] = "gpt-3.5-turbo"
+os.environ["OPENAI_MODEL_NAME"] = config['LLM_NAME']
 
+# Python class to differentiate between generic or project specific query
 class OpenAIResponseModel(BaseModel):
     """Pydantic model for the OpenAI response."""
-    is_generic: bool
+    is_generic: bool   
 
 class CrewManager:
     """
@@ -39,47 +45,6 @@ class CrewManager:
         """
         self.prompt = prompt
 
-    def get_openai_response(self) -> OpenAIResponseModel:
-        """
-        Make an OpenAI API call to classify the query.
-
-        Returns:
-            OpenAIResponseModel: Model indicating if the query is generic.
-        """
-        try:
-            client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-            response = client.chat.completions.create(
-                model="gpt-3.5-turbo",
-                messages=[
-                    {
-                        "role": "system",
-                        "content": (
-                            "You are a helpful test classification assistant. "
-                            "Dependent upon user query classify it into 'generic' or 'project specific'. "
-                            "A generic query is the one which is a generic question related to any topic "
-                            "e.g 'What are the financial options available in the docs?' and a project specific query "
-                            "is the one which has project specific question having detail of any specific project in the query"
-                        ),
-                    },
-                    {
-                        "role": "user",
-                        "content": (
-                            "As per the following project guide me on the financial options: Marbury plaza project "
-                            "is a solar renovation project starting in the end of december 2024. State some financial options please"
-                        ),
-                    },
-                    {"role": "assistant", "content": "project specific"},
-                    {"role": "user", "content": self.prompt},
-                ],
-            )
-
-            classification = response.choices[0].message.content.strip().lower()
-            is_generic = classification == "generic"
-
-            return OpenAIResponseModel(is_generic=is_generic)
-        except Exception as e:
-            logger.error(f"Error getting OpenAI response: {str(e)}")
-            raise CustomException(f"Error getting OpenAI response: {e}", sys)
 
     def start_crew(self, is_generic: bool) -> str:
         """
@@ -151,10 +116,11 @@ class LangraphManager:
         Args:
             prompt (str): The user query or prompt.
         """
-        self.crew_manager = CrewManager(prompt)
+        self.openai_response=get_openai_response(prompt)
         self.prompt = prompt
-        self.rag_tool=RAGTool(prompt)
-        self.graph_rag_tool=GraphRagTool(prompt)
+        self.rag_tool = RAGTool(prompt)
+        self.graph_rag_tool = GraphRagTool(prompt)
+        logger.info("LangraphManager initialized")
 
     def run_workflow(self) -> str:
         """
@@ -164,10 +130,11 @@ class LangraphManager:
             str: The result of the workflow processing.
         """
         try:
-            openai_response = self.crew_manager.get_openai_response()
+            openai_response = self.openai_response
+            logger.info(f"OpenAI response: {openai_response}")
             if openai_response.is_generic:
-                rag=self.graph_rag_tool
-                rag_result = rag.load_neo4j_graph()
+                rag = self.rag_tool
+                rag_result = rag.qa_from_RAG()
                 logger.info(f"RAG result: {rag_result}")
                 return rag_result
             else:
@@ -185,6 +152,8 @@ class LangraphManager:
         """
         try:
             openai_api_key = os.getenv("OPENAI_API_KEY")
+            if not openai_api_key:
+                raise ValueError("OPENAI_API_KEY environment variable not set")
             workflow_manager = WorkflowManager(openai_api_key)
             result = workflow_manager.run(self.prompt)
             if result:
@@ -195,27 +164,4 @@ class LangraphManager:
         except Exception as e:
             logger.error(f"Error running langraph workflow: {str(e)}")
             raise CustomException(f"Error running langraph workflow: {e}", sys)
-       
 
-
-
-# Uncomment for standalone testing
-# if __name__ == "__main__":
-#     prompt = "Your test prompt here"
-#     manager = CrewManager(prompt)
-#     openai_response = manager.get_openai_response()
-#     logger.info(f"OpenAI response: {openai_response}")
-#     result = manager.start_crew(openai_response.is_generic)
-#     print(result)
-
-
-# Uncomment for standalone testing
-# if __name__ == "__main__":
-#     try:
-#         prompt = "Make a detailed report on a solar retrofit project including well fare for elders."
-#         langraph_manager = LangraphManager(prompt)
-#         result = langraph_manager.run_workflow()
-#         print(result)
-#     except Exception as e:
-#         logger.error("Error in main execution.")
-#         raise CustomException(e, sys)
