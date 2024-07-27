@@ -27,37 +27,20 @@ jobs:
       run: |
         python evals/giskard_evals.py
       env:
-        qdrant_url : ${{ secrets.OPENAI_URL }}
-        qdrant_api_key : ${{ secrets.QDRANT_API_KEY }}
-        openai_api_key : ${{ secrets.OPENAI_API_KEY }})
+        qdrant_url: ${{ secrets.OPENAI_URL }}
+        qdrant_api_key: ${{ secrets.QDRANT_API_KEY }}
+        openai_api_key: ${{ secrets.OPENAI_API_KEY }}
         jina_api_key: ${{ secrets.JINA_API_KEY }}
 
     - name: Upload Giskard report
       uses: actions/upload-artifact@v2
       with:
         name: giskard-report
-        path: ./data/giskard-report.html
+        path: ./evals/giskard-report.html
 
-    - name: Post Giskard report link as comment
-      uses: actions/github-script@v6
+    - name: Add report as comment
+      uses: marocchino/sticky-pull-request-comment@v2
       with:
-        script: |
-          const fs = require('fs');
-          const reportPath = './data/giskard-report.html';
-          const reportExists = fs.existsSync(reportPath);
-          if (reportExists) {
-            const reportUrl = `${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts/${{ steps.upload-giskard-report.outputs.artifact_id }}`;
-            github.rest.issues.createComment({
-              issue_number: ${{ github.event.pull_request.number }},
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: `Giskard report generated: [View Report](${reportUrl})`
-            });
-          } else {
-            github.rest.issues.createComment({
-              issue_number: ${{ github.event.pull_request.number }},
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: 'Giskard report was not generated.'
-            });
-          }
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        message: |
+          Here is the [Giskard report](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts/giskard-report) generated for this pull request.
