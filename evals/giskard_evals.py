@@ -1,10 +1,9 @@
 import os
 import sys
 
-# Directly set the project root directory
-project_root = "D:/policy_crew"
 # Ensure the project root is at the top of sys.path
-sys.path.insert(0, project_root)
+project_root = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, os.path.join(project_root, '..'))
 import giskard
 import pandas as pd
 from giskard.rag import evaluate, KnowledgeBase, generate_testset, QATestset
