@@ -16,3 +16,4 @@ llama-index
 llama-index-graph-stores-neo4j
 langgraph
 giskard[llm]
+IPython
