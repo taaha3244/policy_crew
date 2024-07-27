@@ -13,17 +13,20 @@ load_dotenv()
 
 
 
-# Function to load hyperparameters from .yaml file
-def get_hyperparameters_from_file() -> Dict:
+def get_hyperparameters_from_file():
     """
-    Loads values from hyper-parameters.yaml file and returns as a dictionary.
+    Load hyperparameters from a YAML file.
     """
-
     try:
-        with open('/policy_crew' +'/' 'hyper-parameters.yaml', 'r') as file:
-            hyper_parameters = yaml.safe_load(file)
-        logger.info("Hyperparameters loaded successfully.")
-        return hyper_parameters
+        # Correctly construct the path to hyper-parameters.yaml
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        project_root = os.path.abspath(os.path.join(current_dir, '../../..'))
+        config_path = os.path.join(project_root, 'hyper-parameters.yaml')
+
+        with open(config_path, 'r') as file:
+            config = yaml.safe_load(file)
+            logger.info("Hyperparameters loaded successfully.")
+            return config
     except Exception as e:
         logger.error(f"Error loading hyperparameters: {e}")
         raise e
