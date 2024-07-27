@@ -7,7 +7,7 @@ project_root = "D:/policy_crew"
 sys.path.insert(0, project_root)
 import giskard
 import pandas as pd
-from giskard.rag import evaluate, KnowledgeBase, generate_testset
+from giskard.rag import evaluate, KnowledgeBase, generate_testset, QATestset
 from giskard.llm.client.openai import OpenAIClient
 from dotenv import load_dotenv
 from langchain_community.document_loaders import PyPDFLoader
@@ -31,10 +31,11 @@ giskard.llm.set_default_client(oc)
 
 class GiskardEvals:
     def __init__(self):
-        self.file_path = os.path.join(config['ROOT_PATH'], 'data')
+        self.file_path = os.path.join(config['ROOT_PATH'], '')
         self.pdf_paths = self.load_paths()
         self.text_chunks, self.knowledge_base = self.load_and_split_docs()
-        self.testset = None
+        self.testset_path = os.path.join(self.file_path, "test-set.jsonl")
+        self.testset = self.load_or_generate_testset()
 
     def load_paths(self):
         """
@@ -79,27 +80,30 @@ class GiskardEvals:
             logger.error(f"Error loading and splitting documents: {e}")
             raise CustomException(e, sys)
     
-    def generate_test_set(self):
+    def load_or_generate_testset(self):
         """
-        Generate a test set for the knowledge base.
+        Load test set from file if available, otherwise generate a new one.
         """
-        if self.testset is None:
+        if os.path.exists(self.testset_path):
             try:
-                if self.knowledge_base:
-                    self.testset = generate_testset(
-                        knowledge_base=self.knowledge_base,
-                        num_questions=50,
-                        agent_description="A chatbot answering questions about different policies related to projects",
-                    )
-                    testset_path = os.path.join(self.file_path, "test-set.jsonl")
-                    self.testset.save(testset_path)
-                    logger.info(f"Test set generated and saved to {testset_path}.")
-                else:
-                    logger.warning("Knowledge base is not initialized.")
+                testset = QATestset.load(self.testset_path)
+                logger.info(f"Test set loaded from {self.testset_path}.")
+            except Exception as e:
+                logger.error(f"Error loading test set: {e}")
+                raise CustomException(e, sys)
+        else:
+            try:
+                testset = generate_testset(
+                    knowledge_base=self.knowledge_base,
+                    num_questions=50,
+                    agent_description="A chatbot answering questions about different policies related to projects",
+                )
+                testset.save(self.testset_path)
+                logger.info(f"Test set generated and saved to {self.testset_path}.")
             except Exception as e:
                 logger.error(f"Error generating test set: {e}")
                 raise CustomException(e, sys)
-        return self.testset
+        return testset
 
     def load_rag_for_eval(self, question, history=None):
         """
@@ -117,8 +121,7 @@ class GiskardEvals:
         Generate a Giskard report for the evaluation.
         """
         try:
-            testset = self.generate_test_set()
-            report = evaluate(self.load_rag_for_eval, testset=testset, knowledge_base=self.knowledge_base)
+            report = evaluate(self.load_rag_for_eval, testset=self.testset, knowledge_base=self.knowledge_base)
             report_path = os.path.join(self.file_path, "giskard-report.html")
             report.to_html(report_path)
             logger.info("Giskard report generated successfully.")
@@ -131,7 +134,6 @@ class GiskardEvals:
 if __name__ == "__main__":
     try:
         giskard_eval = GiskardEvals()
-        giskard_eval.generate_test_set()
         giskard_eval.giskard_report()
     except CustomException as e:
         logger.error(f"An error occurred during evaluation: {e}")
