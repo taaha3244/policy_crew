@@ -2,8 +2,9 @@ import os
 import sys
 
 # Ensure the project root is at the top of sys.path
-project_root = os.path.dirname(os.path.abspath(__file__))
-sys.path.insert(0, os.path.join(project_root, '..', '..'))
+current_dir = os.path.dirname(os.path.abspath(__file__))
+project_root = os.path.abspath(os.path.join(current_dir, '..'))
+sys.path.insert(0, project_root)
 import giskard
 import pandas as pd
 from giskard.rag import evaluate, KnowledgeBase, generate_testset, QATestset
