@@ -27,20 +27,25 @@ jobs:
       run: |
         python evals/giskard_evals.py
       env:
-        QDRANT_URL: ${{ secrets.OPENAI_URL }}
+        QDRANT_URL: ${{ secrets.QDRANT_URL }}
         QDRANT_API_KEY: ${{ secrets.QDRANT_API_KEY }}
         OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         JINA_API_KEY: ${{ secrets.JINA_API_KEY }}
 
     - name: Upload Giskard report
       uses: actions/upload-artifact@v2
+      id: upload-giskard-report
       with:
         name: giskard-report
         path: ./evals/giskard-report.html
+
+    - name: Get Artifact URL
+      id: get-artifact-url
+      run: echo "::set-output name=url::https://github.com/${{ github.repository }}/suites/${{ github.run_id }}/artifacts/${{ steps.upload-giskard-report.outputs.artifact_id }}"
 
     - name: Add report as comment
       uses: marocchino/sticky-pull-request-comment@v2
       with:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         message: |
-          Here is the [Giskard report](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts/giskard-report) generated for this pull request.
+          Here is the [Giskard report](${{ steps.get-artifact-url.outputs.url }}) generated for this pull request.
