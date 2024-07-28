@@ -19,7 +19,7 @@ def get_hyperparameters_from_file():
     try:
         # Correctly construct the path to hyper-parameters.yaml
         current_dir = os.path.dirname(os.path.abspath(__file__))
-        project_root = os.path.abspath(os.path.join(current_dir, '..', '..', '..'))
+        project_root = os.path.abspath(os.path.join(current_dir, '..', '..'))
         config_path = os.path.join(project_root, 'hyper-parameters.yaml')
 
         with open(config_path, 'r') as file:
