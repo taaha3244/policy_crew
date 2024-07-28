@@ -31,7 +31,7 @@ giskard.llm.set_default_client(oc)
 
 class GiskardEvals:
     def __init__(self):
-        self.file_path = os.path.join(config['ROOT_PATH'], '')
+        self.file_path = project_root
         self.pdf_paths = self.load_paths()
         self.text_chunks, self.knowledge_base = self.load_and_split_docs()
         self.testset_path = os.path.join(self.file_path, "test-set.jsonl")
@@ -49,9 +49,9 @@ class GiskardEvals:
                         full_path = os.path.join(root, file)
                         pdf_paths.append(full_path)
             if pdf_paths:
-                logger.info("PDF paths loaded successfully.")
+                logger.info("PDF paths loaded successfully: {}".format(pdf_paths))
             else:
-                logger.warning("No PDF files found in the specified directory.")
+                logger.warning("No PDF files found in the specified directory: {}".format(self.file_path))
         except Exception as e:
             logger.error(f"Error loading paths: {e}")
             raise CustomException(e, sys)
@@ -64,6 +64,7 @@ class GiskardEvals:
         documents = []
         try:
             for file_path in self.pdf_paths:
+                logger.info(f"Loading PDF file: {file_path}")
                 loader = PyPDFLoader(file_path)
                 loaded_documents = loader.load()
                 documents.extend(loaded_documents)
@@ -124,7 +125,7 @@ class GiskardEvals:
             report = evaluate(self.load_rag_for_eval, testset=self.testset, knowledge_base=self.knowledge_base)
             report_path = os.path.join(self.file_path, "giskard-report.html")
             report.to_html(report_path)
-            logger.info("Giskard report generated successfully.")
+            logger.info(f"Giskard report generated and saved to {report_path}.")
             return report
         except Exception as e:
             logger.error(f"Error generating Giskard report: {e}")
