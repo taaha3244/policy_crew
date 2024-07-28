@@ -5,6 +5,7 @@ import sys
 current_dir = os.path.dirname(os.path.abspath(__file__))
 project_root = os.path.abspath(os.path.join(current_dir, '..'))
 sys.path.insert(0, project_root)
+
 import giskard
 import pandas as pd
 from giskard.rag import evaluate, KnowledgeBase, generate_testset, QATestset
@@ -49,9 +50,9 @@ class GiskardEvals:
                         full_path = os.path.join(root, file)
                         pdf_paths.append(full_path)
             if pdf_paths:
-                logger.info("PDF paths loaded successfully: {}".format(pdf_paths))
+                logger.info("PDF paths loaded successfully.")
             else:
-                logger.warning("No PDF files found in the specified directory: {}".format(self.file_path))
+                logger.warning("No PDF files found in the specified directory.")
         except Exception as e:
             logger.error(f"Error loading paths: {e}")
             raise CustomException(e, sys)
@@ -64,7 +65,6 @@ class GiskardEvals:
         documents = []
         try:
             for file_path in self.pdf_paths:
-                logger.info(f"Loading PDF file: {file_path}")
                 loader = PyPDFLoader(file_path)
                 loaded_documents = loader.load()
                 documents.extend(loaded_documents)
@@ -125,7 +125,7 @@ class GiskardEvals:
             report = evaluate(self.load_rag_for_eval, testset=self.testset, knowledge_base=self.knowledge_base)
             report_path = os.path.join(self.file_path, "giskard-report.html")
             report.to_html(report_path)
-            logger.info(f"Giskard report generated and saved to {report_path}.")
+            logger.info("Giskard report generated successfully.")
             return report
         except Exception as e:
             logger.error(f"Error generating Giskard report: {e}")
