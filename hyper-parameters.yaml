@@ -1,7 +1,6 @@
 LLM_NAME: "gpt-4o-mini"
  
 
-ROOT_PATH: "D:/policy_crew"
 
 PROMPT_TEMPLATE: |
     # Your role
