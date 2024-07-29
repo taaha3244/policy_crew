@@ -9,6 +9,7 @@ from langchain_core.runnables import RunnablePassthrough
 from langchain_core.output_parsers import StrOutputParser
 from langchain.retrievers import ContextualCompressionRetriever
 from langchain_community.document_compressors import JinaRerank
+from langchain_cohere import CohereRerank
 from llama_index.core import PropertyGraphIndex
 from llama_index.embeddings.openai import OpenAIEmbedding as LlamaindexOpenAIEmbeddings
 from llama_index.llms.openai import OpenAI as LlamaindexOpenAI
@@ -65,6 +66,7 @@ class RAGTool:
             qdrant_api_key = os.getenv('QDRANT_API_KEY')
             openai_api_key = os.getenv('OPENAI_API_KEY')
             jina_api_key=os.getenv('JINA_API_KEY')
+            cohere_api_key=os.getenv('COHERE_API_KEY')
 
             if not qdrant_url or not qdrant_api_key or not openai_api_key or not jina_api_key:
                 raise CustomException("Missing environment variables for Qdrant , OpenAI or JINA", sys)
@@ -79,7 +81,8 @@ class RAGTool:
             input_variables=["context","question"]
     )
             llm = ChatOpenAI(model_name=config['LLM_NAME'], temperature=0.2, openai_api_key=openai_api_key)
-            compressor = JinaRerank(jina_api_key=jina_api_key,top_n=5)
+            # compressor = JinaRerank(jina_api_key=jina_api_key,top_n=5)
+            compressor= CohereRerank(model="rerank-english-v3.0",cohere_api_key=cohere_api_key,top_n=5)
             compression_retriever = ContextualCompressionRetriever(
             base_compressor=compressor, base_retriever=retriever
             )
