@@ -1,9 +1,9 @@
-name: Run Giskard Evals on Hyperparameter Changes
+GitHub Actions Workflow for Giskard Evals
+
+name: Run Giskard Evals on Pull Requests
 
 on:
   pull_request:
-    paths:
-      - 'hyper-parameters.yaml'
 
 jobs:
   run-evals:
