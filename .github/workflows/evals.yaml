@@ -42,7 +42,8 @@ jobs:
       uses: peaceiris/actions-gh-pages@v3
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}
-        publish_dir: evals
+        publish_branch: evaluation_script  
+        publish_dir: evals  
         destination_dir: reports/${{ github.event.pull_request.number }}
         enable_jekyll: false
 
