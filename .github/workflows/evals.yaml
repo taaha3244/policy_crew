@@ -32,20 +32,19 @@ jobs:
         JINA_API_KEY: ${{ secrets.JINA_API_KEY }}
         COHERE_API_KEY: ${{ secrets.COHERE_API_KEY }}
         
-
     - name: Upload Giskard report
       uses: actions/upload-artifact@v2
       with:
         name: giskard-report
-        path: ./evals/giskard-report.html
+        path: evals/giskard-report.html
 
     - name: Deploy report to GitHub Pages
       uses: peaceiris/actions-gh-pages@v3
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}
-        publish_dir: ./evals
+        publish_dir: evals
         destination_dir: reports/${{ github.event.pull_request.number }}
-        enable_jekyll: false  # Ensure Jekyll doesn't process our HTML
+        enable_jekyll: false
 
     - name: Add report as comment
       uses: actions/github-script@v6
@@ -58,4 +57,4 @@ jobs:
             owner: context.repo.owner,
             repo: context.repo.repo,
             body: `The Giskard report for this pull request is available [here](${reportUrl}). This report includes all necessary styling.`
-          })
+          });
