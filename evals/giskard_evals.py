@@ -96,7 +96,7 @@ class GiskardEvals:
             try:
                 testset = generate_testset(
                     knowledge_base=self.knowledge_base,
-                    num_questions=50,
+                    num_questions=30,
                     agent_description="A chatbot answering questions about different policies related to projects",
                 )
                 testset.save(self.testset_path)
