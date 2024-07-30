@@ -26,6 +26,7 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         pip install -r app/backend/requirements.txt
+        pip install requests
 
     - name: Run Evals
       run: |
@@ -36,11 +37,7 @@ jobs:
         OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         JINA_API_KEY: ${{ secrets.JINA_API_KEY }}
         COHERE_API_KEY: ${{ secrets.COHERE_API_KEY }}
-
-    - name: Add report as comment
-      uses: marocchino/sticky-pull-request-comment@v2
-      with:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        message: |
-          Here are the test suite results for this pull request:
-          ${{ steps.run-evals.outputs.test_suite_results }}
+        GITHUB_REPOSITORY: ${{ github.repository }}
+        GITHUB_PR_NUMBER: ${{ github.event.pull_request.number }}
+
