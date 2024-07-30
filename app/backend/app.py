@@ -1,11 +1,13 @@
-import sys
 import redis
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
-from app.backend.main import CrewManager, LangraphManager  # Import LangraphManager
+from app.backend.main import CrewManager, LangraphManager
 from custom_logger import logger
-from app.backend.database import redis_client  # Import redis_client from database.py
+from app.backend.database import redis_client
 from custom_exceptions import CustomException
+from app.backend.utils import get_hyperparameters_from_file, OpenAIResponseModel,get_openai_response
+from dotenv import load_dotenv
+import os
 
 app = FastAPI()
 
@@ -16,6 +18,16 @@ class QuestionResponse(BaseModel):
     question: str
     response: str
     agent: str
+
+# Load environment variables
+load_dotenv()
+
+# Loading hyper parameters from the yaml file
+config = get_hyperparameters_from_file()
+
+# Set the OpenAI API key
+os.environ["OPENAI_API_KEY"] = os.getenv("OPENAI_API_KEY")
+os.environ["OPENAI_MODEL_NAME"] = config['LLM_NAME']
 
 @app.post("/process_query/")
 async def process_query(query: QueryModel):
@@ -32,7 +44,7 @@ async def process_query(query: QueryModel):
     """
     try:
         manager = CrewManager(query.query)
-        openai_response = manager.get_openai_response()
+        openai_response = OpenAIResponseModel(is_generic=get_openai_response(query.query).is_generic)
         logger.info(f"OpenAI response: {openai_response}")
 
         result = manager.start_crew(openai_response.is_generic)
@@ -77,12 +89,13 @@ async def process_query_langraph(query: QueryModel):
         HTTPException: If there is an error processing the query.
     """
     try:
+        print(f"Received query: {query.query}")
         langraph_manager = LangraphManager(query.query)
         result = langraph_manager.run_workflow()
         if result is None:
             raise ValueError("Langraph workflow returned None")
         
-        agent_name = "Langraph Graph RAG" if langraph_manager.crew_manager.get_openai_response().is_generic else "Langraph AI agent"
+        agent_name = "Langraph Graph RAG" if langraph_manager.openai_response.is_generic else "Langraph AI agent"
         
         question_response = QuestionResponse(
             question=query.query, 

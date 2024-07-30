@@ -3,10 +3,11 @@ from dotenv import load_dotenv
 import os
 import sys
 
-# Directly add the project root directory
-project_root = "\policy_crew"
-if project_root not in sys.path:
-    sys.path.insert(0, project_root)
+# Directly set the project root directory
+project_root = "/policy_crew"
+# Ensure the project root is at the top of sys.path
+sys.path.insert(0, project_root)
+
 
 
 # Import custom modules
@@ -18,7 +19,7 @@ from app.frontend.chat_interface import render_chat_interface
 load_dotenv()
 
 # URL of the FastAPI backend
-FASTAPI_URL = os.getenv("FASTAPI_URL", "http://localhost:8000")
+FASTAPI_URL = os.getenv("FASTAPI_URL", "http://backend:8000")
 
 # Initialize session state
 initialize_state()

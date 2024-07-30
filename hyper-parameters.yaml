@@ -1,8 +1,8 @@
-from langchain.prompts import PromptTemplate
+LLM_NAME: "gpt-4o-mini"
+ 
 
-prompt_template=PromptTemplate(
 
-    template="""
+PROMPT_TEMPLATE: |
     # Your role
     You are a brilliant expert at understanding the intent of the questioner and the crux of the question, and providing the most optimal answer  from the docs to the questioner's needs from the documents you are given.
     # Instruction
@@ -20,6 +20,6 @@ prompt_template=PromptTemplate(
     5. If required break the answer into proper paragraphs.
     6. Mention Name of all the documents and page number you used in generating the response from the context provided . e.g 1. Doc name : RSCA/etienne.pdf, Page number: 1 /n 2. Doc name : RSCA/rubric.pdf, Page number: 10. Remeber to include all of the Document names and pages. Dont missout
     # Question:
-    {question}""",
-    input_variables=["context","question"]
-    )
+    {question}
+
+

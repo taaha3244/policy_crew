@@ -1,10 +1,14 @@
 import os
 import sys
-from dotenv import load_dotenv
-from typing import List, Optional, Type, Literal
-from qdrant_client import QdrantClient
-from langchain.embeddings.openai import OpenAIEmbeddings
-from langchain.vectorstores.qdrant import Qdrant
+# Directly set the project root directory
+project_root = "D:/policy_crew"
+# Ensure the project root is at the top of sys.path
+sys.path.insert(0, project_root)
+from dotenv import load_dotenv  # noqa: E402
+from typing import List, Optional, Type, Literal  # noqa: E402
+from qdrant_client import QdrantClient  # noqa: E402
+from langchain_community.embeddings import OpenAIEmbeddings
+from langchain_community.vectorstores import Qdrant
 from langchain_openai import ChatOpenAI
 from langchain_core.messages import (
     BaseMessage,
@@ -20,12 +24,13 @@ import functools
 from langchain_core.messages import AIMessage
 import operator
 from typing import Annotated, Sequence, TypedDict
-
+from app.backend.utils import get_hyperparameters_from_file
 # Import custom logger and exceptions
 from custom_logger import logger
 from custom_exceptions import CustomException
 
 load_dotenv()
+config=get_hyperparameters_from_file()
 
 class AgentState(TypedDict):
     messages: Annotated[Sequence[BaseMessage], operator.add]
@@ -35,7 +40,7 @@ class WorkflowManager:
     def __init__(self, openai_api_key: str):
         try:
             self.openai_api_key = openai_api_key
-            self.llm = ChatOpenAI(model="gpt-4o", api_key=openai_api_key)
+            self.llm = ChatOpenAI(model=config['LLM_NAME'], api_key=openai_api_key)
             self.report_tool_instance = self._create_report_tool()
             self.workflow = StateGraph(AgentState)
             self._setup_workflow()
@@ -261,3 +266,10 @@ class WorkflowManager:
         except Exception as e:
             logger.error("Error during workflow run.")
             raise CustomException(e, sys)
+        
+
+if __name__ == "__main__":
+    workflow=WorkflowManager(openai_api_key=os.getenv("OPENAI_API_KEY"))
+    result=workflow.run("I have started a retrofit project related to solar in california")
+    print(result)
+ 

@@ -7,6 +7,9 @@ WORKDIR /policy_crew
 # Set the PYTHONPATH environment variable to the working directory
 ENV PYTHONPATH=/policy_crew
 
+# Copy the requirements file first to leverage Docker cache
+COPY app/backend/requirements.txt /policy_crew/app/backend/requirements.txt
+
 # Copy the entire project to the working directory
 COPY . /policy_crew
 
