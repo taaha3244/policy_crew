@@ -37,15 +37,10 @@ jobs:
         JINA_API_KEY: ${{ secrets.JINA_API_KEY }}
         COHERE_API_KEY: ${{ secrets.COHERE_API_KEY }}
 
-    - name: Upload Giskard report
-      uses: actions/upload-artifact@v2
-      with:
-        name: giskard-report
-        path: evals/giskard-report.html
-
     - name: Add report as comment
       uses: marocchino/sticky-pull-request-comment@v2
       with:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         message: |
-          Here is the [Giskard report](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts/giskard-report) generated for this pull request.
+          Here are the test suite results for this pull request:
+          ${{ steps.run-evals.outputs.test_suite_results }}
