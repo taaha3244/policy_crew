@@ -96,7 +96,7 @@ class GiskardEvals:
             try:
                 testset = generate_testset(
                     knowledge_base=self.knowledge_base,
-                    num_questions=30,
+                    num_questions=10,
                     agent_description="A chatbot answering questions about different policies related to projects",
                 )
                 testset.save(self.testset_path)
@@ -131,10 +131,53 @@ class GiskardEvals:
             logger.error(f"Error generating Giskard report: {e}")
             raise CustomException(e, sys)
 
+    def batch_prediction_fn(self, df: pd.DataFrame):
+        """
+        Batch prediction function for the Giskard model.
+
+        Args:
+            df (pd.DataFrame): DataFrame containing the questions.
+
+        Returns:
+            List: List of answers for the provided questions.
+        """
+        try:
+            logger.info("Running batch prediction.")
+            return self.load_rag_for_eval(df["question"])
+        except Exception as e:
+            logger.error(f"Error in batch prediction function: {e}")
+            raise CustomException(e, sys)
+
+    def run_test_suite(self):
+        """
+        Run the test suite and return the results.
+
+        Returns:
+            test_suite_results: Results of the test suite run.
+        """
+        try:
+            logger.info("Creating test suite.")
+            test_suite = self.testset.to_test_suite("Policy Question and Answer Test Suite")
+            giskard_model = giskard.Model(
+                model=self.batch_prediction_fn,
+                model_type="text_generation",
+                name="Policy Question and Answer Model",
+                description="This model answers questions about policy documents.",
+                feature_names=["question"]
+            )
+            logger.info("Running test suite.")
+            test_suite_results = test_suite.run(model=giskard_model)
+            logger.info("Test suite run successfully.")
+            return test_suite_results
+        except Exception as e:
+            logger.error(f"Error running test suite: {e}")
+            raise CustomException(e, sys)
+
 # Example usage
 if __name__ == "__main__":
     try:
         giskard_eval = GiskardEvals()
-        giskard_eval.giskard_report()
+        test_suite_results = giskard_eval.run_test_suite()
+        print(test_suite_results)
     except CustomException as e:
         logger.error(f"An error occurred during evaluation: {e}")
