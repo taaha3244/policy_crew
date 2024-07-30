@@ -1,5 +1,6 @@
 import os
 import sys
+import requests
 
 # Ensure the project root is at the top of sys.path
 current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -126,58 +127,42 @@ class GiskardEvals:
             report_path = os.path.join(self.file_path, "giskard-report.html")
             report.to_html(report_path)
             logger.info("Giskard report generated successfully.")
-            return report
+            return report, report.correctness
         except Exception as e:
             logger.error(f"Error generating Giskard report: {e}")
             raise CustomException(e, sys)
 
-    def batch_prediction_fn(self, df: pd.DataFrame):
+    def post_comment_to_pr(self, comment):
         """
-        Batch prediction function for the Giskard model.
-
-        Args:
-            df (pd.DataFrame): DataFrame containing the questions.
-
-        Returns:
-            List: List of answers for the provided questions.
+        Post a comment to the GitHub pull request.
         """
         try:
-            logger.info("Running batch prediction.")
-            return self.load_rag_for_eval(df["question"])
-        except Exception as e:
-            logger.error(f"Error in batch prediction function: {e}")
-            raise CustomException(e, sys)
+            token = os.getenv('GITHUB_TOKEN')
+            repo = os.getenv('GITHUB_REPOSITORY')
+            pr_number = os.getenv('GITHUB_PR_NUMBER')
 
-    def run_test_suite(self):
-        """
-        Run the test suite and return the results.
+            if not token or not repo or not pr_number:
+                raise ValueError("GitHub token, repository, or PR number is not set in environment variables.")
 
-        Returns:
-            test_suite_results: Results of the test suite run.
-        """
-        try:
-            logger.info("Creating test suite.")
-            test_suite = self.testset.to_test_suite("Policy Question and Answer Test Suite")
-            giskard_model = giskard.Model(
-                model=self.batch_prediction_fn,
-                model_type="text_generation",
-                name="Policy Question and Answer Model",
-                description="This model answers questions about policy documents.",
-                feature_names=["question"]
-            )
-            logger.info("Running test suite.")
-            test_suite_results = test_suite.run(model=giskard_model)
-            logger.info("Test suite run successfully.")
-            return test_suite_results
+            url = f"https://api.github.com/repos/{repo}/issues/{pr_number}/comments"
+            headers = {"Authorization": f"token {token}"}
+            data = {"body": comment}
+
+            response = requests.post(url, headers=headers, json=data)
+            response.raise_for_status()
+
+            logger.info("Comment posted to PR successfully.")
         except Exception as e:
-            logger.error(f"Error running test suite: {e}")
+            logger.error(f"Error posting comment to PR: {e}")
             raise CustomException(e, sys)
 
 # Example usage
 if __name__ == "__main__":
     try:
         giskard_eval = GiskardEvals()
-        test_suite_results = giskard_eval.run_test_suite()
-        print(test_suite_results)
+        report, correctness_score = giskard_eval.giskard_report()
+        comment = f"Correctness Score: {correctness_score}"
+        giskard_eval.post_comment_to_pr(comment)
+        print(report)
     except CustomException as e:
         logger.error(f"An error occurred during evaluation: {e}")
