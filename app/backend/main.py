@@ -119,7 +119,6 @@ class LangraphManager:
         self.openai_response=get_openai_response(prompt)
         self.prompt = prompt
         self.rag_tool = RAGTool(prompt)
-        self.graph_rag_tool = GraphRagTool(prompt)
         logger.info("LangraphManager initialized")
 
     def run_workflow(self) -> str:
