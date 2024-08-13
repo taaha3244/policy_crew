@@ -74,7 +74,7 @@ class RAGTool:
             embeddings_model = OpenAIEmbeddings(model='text-embedding-ada-002', openai_api_key=openai_api_key)
             qdrant_client = QdrantClient(url=qdrant_url, api_key=qdrant_api_key)
             qdrant = Qdrant(client=qdrant_client, collection_name="policy-agent", embeddings=embeddings_model)
-            retriever = qdrant.as_retriever(search_kwargs={"k": 20})
+            retriever = qdrant.as_retriever(search_kwargs={"k": 10})
             prompt = PromptTemplate(
 
             template=config['PROMPT_TEMPLATE'],
@@ -147,6 +147,8 @@ class ReportTool(BaseTool):
             qdrant_api_key = os.getenv('QDRANT_API_KEY')
             openai_api_key = os.getenv('OPENAI_API_KEY')
             jina_api_key=os.getenv('JINA_API_KEY')
+            cohere_api_key=os.getenv('COHERE_API_KEY')
+
 
             if not qdrant_url or not qdrant_api_key or not openai_api_key:
                 raise CustomException("Missing environment variables for Qdrant or OpenAI", sys)
@@ -154,8 +156,8 @@ class ReportTool(BaseTool):
             embeddings_model = OpenAIEmbeddings(model='text-embedding-ada-002', openai_api_key=openai_api_key)
             qdrant_client = QdrantClient(url=qdrant_url, api_key=qdrant_api_key)
             qdrant = Qdrant(client=qdrant_client, collection_name="policy-agent", embeddings=embeddings_model)
-            retriever = qdrant.as_retriever(search_kwargs={"k": 15})
-            compressor = JinaRerank(jina_api_key=jina_api_key,top_n=3)
+            retriever = qdrant.as_retriever(search_kwargs={"k": 10})
+            compressor= CohereRerank(model="rerank-english-v3.0",cohere_api_key=cohere_api_key,top_n=5)
             compression_retriever = ContextualCompressionRetriever(
             base_compressor=compressor, base_retriever=retriever
             )
